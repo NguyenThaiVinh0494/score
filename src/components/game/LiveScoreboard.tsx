@@ -5,6 +5,7 @@ import { Player, RoundLog } from "@/types/game";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import {
   Undo2,
   RotateCcw,
@@ -13,11 +14,11 @@ import {
   History,
   ChevronDown,
   ChevronUp,
-  Flame,
   Plus,
   Crown,
   Swords,
-  TrendingUp
+  TrendingUp,
+  Scale
 } from "lucide-react";
 
 interface LiveScoreboardProps {
@@ -32,14 +33,46 @@ interface LiveScoreboardProps {
 }
 
 const PLAYER_THEME_COLORS = [
-  { border: "border-sky-500", bg: "bg-sky-50", badge: "bg-sky-500 text-white", ring: "ring-sky-400" },
-  { border: "border-emerald-500", bg: "bg-emerald-50", badge: "bg-emerald-500 text-white", ring: "ring-emerald-400" },
-  { border: "border-amber-500", bg: "bg-amber-50", badge: "bg-amber-500 text-white", ring: "ring-amber-400" },
-  { border: "border-rose-500", bg: "bg-rose-50", badge: "bg-rose-500 text-white", ring: "ring-rose-400" },
-  { border: "border-indigo-500", bg: "bg-indigo-50", badge: "bg-indigo-500 text-white", ring: "ring-indigo-400" },
-  { border: "border-teal-500", bg: "bg-teal-50", badge: "bg-teal-500 text-white", ring: "ring-teal-400" },
-  { border: "border-violet-500", bg: "bg-violet-50", badge: "bg-violet-500 text-white", ring: "ring-violet-400" },
-  { border: "border-pink-500", bg: "bg-pink-50", badge: "bg-pink-500 text-white", ring: "ring-pink-400" },
+  {
+    badge: "bg-sky-500 text-white",
+    btn: "bg-sky-600 hover:bg-sky-700 active:bg-sky-800 shadow-sky-600/25",
+    border: "border-sky-500",
+  },
+  {
+    badge: "bg-emerald-500 text-white",
+    btn: "bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 shadow-emerald-600/25",
+    border: "border-emerald-500",
+  },
+  {
+    badge: "bg-amber-500 text-white",
+    btn: "bg-amber-500 hover:bg-amber-600 active:bg-amber-700 shadow-amber-500/25 text-white",
+    border: "border-amber-500",
+  },
+  {
+    badge: "bg-rose-500 text-white",
+    btn: "bg-rose-600 hover:bg-rose-700 active:bg-rose-800 shadow-rose-600/25",
+    border: "border-rose-500",
+  },
+  {
+    badge: "bg-indigo-500 text-white",
+    btn: "bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 shadow-indigo-600/25",
+    border: "border-indigo-500",
+  },
+  {
+    badge: "bg-teal-500 text-white",
+    btn: "bg-teal-600 hover:bg-teal-700 active:bg-teal-800 shadow-teal-600/25",
+    border: "border-teal-500",
+  },
+  {
+    badge: "bg-violet-500 text-white",
+    btn: "bg-violet-600 hover:bg-violet-700 active:bg-violet-800 shadow-violet-600/25",
+    border: "border-violet-500",
+  },
+  {
+    badge: "bg-pink-500 text-white",
+    btn: "bg-pink-600 hover:bg-pink-700 active:bg-pink-800 shadow-pink-600/25",
+    border: "border-pink-500",
+  },
 ];
 
 export function LiveScoreboard({
@@ -61,6 +94,7 @@ export function LiveScoreboard({
   const minScore = Math.min(...scores);
   const leadersCount = players.filter((p) => p.score === maxScore).length;
   const isScoreDiverged = maxScore > minScore;
+  const isTwoPlayers = players.length === 2;
 
   const handlePlayerScore = React.useCallback((playerId: string) => {
     setLastScoredId(playerId);
@@ -160,13 +194,16 @@ export function LiveScoreboard({
           const isJustScored = lastScoredId === player.id;
           const remainingToWin = targetScore - player.score;
 
-          // 1. Duy nhất 1 người dẫn đầu
+          // 1. Chỉ 1 người dẫn đầu độc tôn
           const isSoloLeader = maxScore > 0 && player.score === maxScore && leadersCount === 1;
 
-          // 2. Đồng dẫn đầu (từ 2 người trở lên có cùng điểm cao nhất)
-          const isTiedLeader = maxScore > 0 && player.score === maxScore && leadersCount > 1 && isScoreDiverged;
+          // 2. Hòa điểm khi chỉ có đúng 2 người chơi
+          const isTwoPlayerTie = isTwoPlayers && maxScore > 0 && player.score === maxScore && !isScoreDiverged;
 
-          // 3. Người xếp cuối cùng (khi đã có người ghi điểm trước)
+          // 3. Đồng dẫn đầu khi có từ 3 người chơi trở lên
+          const isMultiPlayerTie = !isTwoPlayers && maxScore > 0 && player.score === maxScore && leadersCount > 1;
+
+          // 4. Người xếp cuối cùng (khi đã có sự phân hóa điểm)
           const isLastPlace = isScoreDiverged && player.score === minScore;
 
           return (
@@ -175,7 +212,9 @@ export function LiveScoreboard({
               className={`relative overflow-hidden transition-all duration-200 border-2 ${
                 isSoloLeader
                   ? "border-amber-400 shadow-md shadow-amber-100 ring-2 ring-amber-300/50 bg-gradient-to-b from-amber-50/20 to-white"
-                  : isTiedLeader
+                  : isTwoPlayerTie
+                  ? "border-sky-300 shadow-sm shadow-sky-50 ring-2 ring-sky-200/50 bg-gradient-to-b from-sky-50/15 to-white"
+                  : isMultiPlayerTie
                   ? "border-indigo-400 shadow-sm shadow-indigo-100 ring-2 ring-indigo-200/50 bg-gradient-to-b from-indigo-50/20 to-white"
                   : isLastPlace
                   ? "border-slate-200/90 hover:border-slate-300 bg-slate-50/30"
@@ -190,7 +229,14 @@ export function LiveScoreboard({
                 </div>
               )}
 
-              {isTiedLeader && (
+              {isTwoPlayerTie && (
+                <div className="absolute top-2 right-2 flex items-center gap-1 bg-sky-100 text-sky-800 border border-sky-200 font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow-2xs">
+                  <Scale className="w-3 h-3 text-sky-600" />
+                  <span>Đang hòa ⚖️</span>
+                </div>
+              )}
+
+              {isMultiPlayerTie && (
                 <div className="absolute top-2 right-2 flex items-center gap-1 bg-indigo-500 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow-xs">
                   <Swords className="w-3 h-3" />
                   <span>Đồng hạng nhất</span>
@@ -242,18 +288,15 @@ export function LiveScoreboard({
                   </div>
                 </div>
 
-                {/* 1-Touch Score Button */}
+                {/* 1-Touch Score Button (Color matches Player Number Avatar) */}
                 <Button
                   variant="primary"
                   size="xl"
                   onClick={() => handlePlayerScore(player.id)}
-                  className={`w-full h-14 sm:h-16 text-lg font-bold rounded-2xl shadow-md transition-all active:scale-95 cursor-pointer ${
-                    index === 0
-                      ? "bg-sky-600 hover:bg-sky-700"
-                      : index === 1
-                      ? "bg-emerald-600 hover:bg-emerald-700"
-                      : "bg-slate-800 hover:bg-slate-900"
-                  }`}
+                  className={cn(
+                    "w-full h-14 sm:h-16 text-lg font-bold rounded-2xl shadow-md transition-all active:scale-95 cursor-pointer text-white",
+                    color.btn
+                  )}
                 >
                   <Plus className="w-5 h-5 stroke-[3]" />
                   <span>+1 Điểm</span>
