@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { getPlayerColor } from "@/lib/colors";
 import {
   Undo2,
   RotateCcw,
@@ -17,8 +18,9 @@ import {
   Plus,
   Crown,
   Swords,
-  TrendingUp,
-  Scale
+  Flame,
+  Scale,
+  Sparkles
 } from "lucide-react";
 
 interface LiveScoreboardProps {
@@ -31,8 +33,6 @@ interface LiveScoreboardProps {
   onReset: () => void;
   onEndMatch: () => void;
 }
-
-import { getPlayerColor } from "@/lib/colors";
 
 export function LiveScoreboard({
   title,
@@ -47,10 +47,13 @@ export function LiveScoreboard({
   const [showHistoryLogs, setShowHistoryLogs] = useState(false);
   const [lastScoredId, setLastScoredId] = useState<string | null>(null);
 
-  // Highest and Lowest current score
+  // Tính toán bảng xếp hạng và các mốc điểm
   const scores = players.map((p) => p.score);
-  const maxScore = Math.max(...scores);
-  const minScore = Math.min(...scores);
+  const sortedUniqueScores = Array.from(new Set(scores)).sort((a, b) => b - a);
+  const maxScore = sortedUniqueScores[0] || 0;
+  const secondScore = sortedUniqueScores.length > 1 ? sortedUniqueScores[1] : undefined;
+  const minScore = sortedUniqueScores[sortedUniqueScores.length - 1] || 0;
+
   const leadersCount = players.filter((p) => p.score === maxScore).length;
   const isScoreDiverged = maxScore > minScore;
   const isTwoPlayers = players.length === 2;
@@ -66,7 +69,6 @@ export function LiveScoreboard({
   // Desktop keyboard shortcuts (1, 2, 3...)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if inside input/textarea
       if (["INPUT", "TEXTAREA"].includes((e.target as HTMLElement).tagName)) {
         return;
       }
@@ -77,7 +79,6 @@ export function LiveScoreboard({
           handlePlayerScore(targetPlayer.id);
         }
       } else if (e.key === "z" && (e.ctrlKey || e.metaKey)) {
-        // Ctrl+Z for Undo
         e.preventDefault();
         if (rounds.length > 0) {
           onUndo();
@@ -156,14 +157,24 @@ export function LiveScoreboard({
           // 1. Chỉ 1 người dẫn đầu độc tôn
           const isSoloLeader = maxScore > 0 && player.score === maxScore && leadersCount === 1;
 
-          // 2. Hòa điểm khi chỉ có đúng 2 người chơi
+          // 2. Hòa điểm khi chỉ có 2 người chơi
           const isTwoPlayerTie = isTwoPlayers && maxScore > 0 && player.score === maxScore && !isScoreDiverged;
 
-          // 3. Đồng dẫn đầu khi có từ 3 người chơi trở lên
+          // 3. Đồng dẫn đầu khi có >= 3 người chơi
           const isMultiPlayerTie = !isTwoPlayers && maxScore > 0 && player.score === maxScore && leadersCount > 1;
 
-          // 4. Người xếp cuối cùng (khi đã có sự phân hóa điểm)
-          const isLastPlace = isScoreDiverged && player.score === minScore;
+          // 4. Người xếp ngay sau nhóm dẫn đầu (Hạng 2 - Đang bám đuổi)
+          const isChasingLeader =
+            isScoreDiverged &&
+            secondScore !== undefined &&
+            player.score === secondScore &&
+            (isTwoPlayers || secondScore !== minScore);
+
+          // 5. Người xếp thấp nhất (Đội sổ / Cần cấp cứu)
+          const isLastPlace =
+            isScoreDiverged &&
+            player.score === minScore &&
+            (!isTwoPlayers || secondScore === undefined);
 
           return (
             <Card
@@ -175,8 +186,10 @@ export function LiveScoreboard({
                   ? "border-sky-300 shadow-sm shadow-sky-50 ring-2 ring-sky-200/50 bg-gradient-to-b from-sky-50/15 to-white"
                   : isMultiPlayerTie
                   ? "border-indigo-400 shadow-sm shadow-indigo-100 ring-2 ring-indigo-200/50 bg-gradient-to-b from-indigo-50/20 to-white"
+                  : isChasingLeader
+                  ? "border-orange-300/90 shadow-sm shadow-orange-50 bg-gradient-to-b from-orange-50/20 to-white"
                   : isLastPlace
-                  ? "border-slate-200/90 hover:border-slate-300 bg-slate-50/30"
+                  ? "border-rose-300/80 shadow-xs bg-rose-50/15"
                   : "border-slate-200/90 hover:border-slate-300 bg-white"
               }`}
             >
@@ -202,10 +215,16 @@ export function LiveScoreboard({
                 </div>
               )}
 
+              {isChasingLeader && (
+                <div className="absolute top-2 right-2 flex items-center gap-1 bg-orange-500 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow-xs">
+                  <Flame className="w-3 h-3 fill-current" />
+                  <span>Bám sát 🔥</span>
+                </div>
+              )}
+
               {isLastPlace && (
-                <div className="absolute top-2 right-2 flex items-center gap-1 bg-slate-100 text-slate-600 border border-slate-200 font-semibold text-[10px] px-2 py-0.5 rounded-full shadow-2xs">
-                  <TrendingUp className="w-3 h-3 text-sky-500" />
-                  <span>Bám đuổi 💪</span>
+                <div className="absolute top-2 right-2 flex items-center gap-1 bg-rose-100 text-rose-800 border border-rose-200 font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow-2xs">
+                  <span>🐢 Đội sổ 🤡</span>
                 </div>
               )}
 
@@ -247,18 +266,18 @@ export function LiveScoreboard({
                   </div>
                 </div>
 
-                {/* 1-Touch Score Button (Color matches Player Number Avatar) */}
+                {/* 1-Touch Score Button (Chỉ 1 dấu + duy nhất) */}
                 <Button
                   variant="primary"
                   size="xl"
                   onClick={() => handlePlayerScore(player.id)}
                   className={cn(
-                    "w-full h-14 sm:h-16 text-lg font-bold rounded-2xl shadow-md transition-all active:scale-95 cursor-pointer text-white",
+                    "w-full h-14 sm:h-16 text-lg font-bold rounded-2xl shadow-md transition-all active:scale-95 cursor-pointer text-white gap-1.5",
                     color.btn
                   )}
                 >
                   <Plus className="w-5 h-5 stroke-[3]" />
-                  <span>+1 Điểm</span>
+                  <span>1 Điểm</span>
                 </Button>
               </div>
             </Card>
@@ -293,7 +312,7 @@ export function LiveScoreboard({
           <div className="p-4 pt-1 border-t border-slate-100 bg-slate-50/50 max-h-56 overflow-y-auto space-y-1.5">
             {rounds.length === 0 ? (
               <div className="text-center text-xs text-slate-400 py-3">
-                Chưa có hiệp nào được ghi nhận. Bấm &quot;+1 Điểm&quot; cho người thắng hiệp đầu tiên!
+                Chưa có hiệp nào được ghi nhận. Bấm nút ghi điểm cho người thắng hiệp đầu tiên!
               </div>
             ) : (
               [...rounds].reverse().map((round) => (
