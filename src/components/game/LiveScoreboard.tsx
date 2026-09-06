@@ -14,7 +14,10 @@ import {
   ChevronDown,
   ChevronUp,
   Flame,
-  Plus
+  Plus,
+  Crown,
+  Swords,
+  TrendingUp
 } from "lucide-react";
 
 interface LiveScoreboardProps {
@@ -52,8 +55,12 @@ export function LiveScoreboard({
   const [showHistoryLogs, setShowHistoryLogs] = useState(false);
   const [lastScoredId, setLastScoredId] = useState<string | null>(null);
 
-  // Highest current score
-  const maxScore = Math.max(...players.map((p) => p.score));
+  // Highest and Lowest current score
+  const scores = players.map((p) => p.score);
+  const maxScore = Math.max(...scores);
+  const minScore = Math.min(...scores);
+  const leadersCount = players.filter((p) => p.score === maxScore).length;
+  const isScoreDiverged = maxScore > minScore;
 
   const handlePlayerScore = React.useCallback((playerId: string) => {
     setLastScoredId(playerId);
@@ -119,7 +126,7 @@ export function LiveScoreboard({
             size="sm"
             onClick={onUndo}
             disabled={rounds.length === 0}
-            className="h-9 px-2.5 text-xs text-slate-700 disabled:opacity-30"
+            className="h-9 px-2.5 text-xs text-slate-700 disabled:opacity-30 cursor-pointer"
             title="Hoàn tác điểm số vừa ghi (Ctrl + Z)"
           >
             <Undo2 className="w-4 h-4 text-slate-600" />
@@ -130,7 +137,7 @@ export function LiveScoreboard({
             variant="ghost"
             size="sm"
             onClick={onReset}
-            className="h-9 px-2 text-xs text-slate-500 hover:text-rose-600"
+            className="h-9 px-2 text-xs text-slate-500 hover:text-rose-600 cursor-pointer"
             title="Đặt lại điểm số"
           >
             <RotateCcw className="w-4 h-4" />
@@ -150,24 +157,50 @@ export function LiveScoreboard({
       >
         {players.map((player, index) => {
           const color = PLAYER_THEME_COLORS[index % PLAYER_THEME_COLORS.length];
-          const isLeader = maxScore > 0 && player.score === maxScore;
           const isJustScored = lastScoredId === player.id;
           const remainingToWin = targetScore - player.score;
+
+          // 1. Duy nhất 1 người dẫn đầu
+          const isSoloLeader = maxScore > 0 && player.score === maxScore && leadersCount === 1;
+
+          // 2. Đồng dẫn đầu (từ 2 người trở lên có cùng điểm cao nhất)
+          const isTiedLeader = maxScore > 0 && player.score === maxScore && leadersCount > 1 && isScoreDiverged;
+
+          // 3. Người xếp cuối cùng (khi đã có người ghi điểm trước)
+          const isLastPlace = isScoreDiverged && player.score === minScore;
 
           return (
             <Card
               key={player.id}
               className={`relative overflow-hidden transition-all duration-200 border-2 ${
-                isLeader
-                  ? "border-amber-400/90 shadow-md shadow-amber-100 ring-2 ring-amber-300/40"
-                  : "border-slate-200/90 hover:border-slate-300"
+                isSoloLeader
+                  ? "border-amber-400 shadow-md shadow-amber-100 ring-2 ring-amber-300/50 bg-gradient-to-b from-amber-50/20 to-white"
+                  : isTiedLeader
+                  ? "border-indigo-400 shadow-sm shadow-indigo-100 ring-2 ring-indigo-200/50 bg-gradient-to-b from-indigo-50/20 to-white"
+                  : isLastPlace
+                  ? "border-slate-200/90 hover:border-slate-300 bg-slate-50/30"
+                  : "border-slate-200/90 hover:border-slate-300 bg-white"
               }`}
             >
-              {/* Leader Ribbon */}
-              {isLeader && (
-                <div className="absolute top-2 right-2 flex items-center gap-1 bg-amber-400 text-amber-950 font-bold text-[10px] px-2 py-0.5 rounded-full shadow-xs">
-                  <Flame className="w-3 h-3 fill-current text-amber-900" />
+              {/* Dynamic Status Badges */}
+              {isSoloLeader && (
+                <div className="absolute top-2 right-2 flex items-center gap-1 bg-amber-500 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow-xs animate-pulse">
+                  <Crown className="w-3 h-3 fill-current" />
                   <span>Dẫn đầu</span>
+                </div>
+              )}
+
+              {isTiedLeader && (
+                <div className="absolute top-2 right-2 flex items-center gap-1 bg-indigo-500 text-white font-bold text-[10px] px-2.5 py-0.5 rounded-full shadow-xs">
+                  <Swords className="w-3 h-3" />
+                  <span>Đồng hạng nhất</span>
+                </div>
+              )}
+
+              {isLastPlace && (
+                <div className="absolute top-2 right-2 flex items-center gap-1 bg-slate-100 text-slate-600 border border-slate-200 font-semibold text-[10px] px-2 py-0.5 rounded-full shadow-2xs">
+                  <TrendingUp className="w-3 h-3 text-sky-500" />
+                  <span>Bám đuổi 💪</span>
                 </div>
               )}
 
@@ -214,7 +247,7 @@ export function LiveScoreboard({
                   variant="primary"
                   size="xl"
                   onClick={() => handlePlayerScore(player.id)}
-                  className={`w-full h-14 sm:h-16 text-lg font-bold rounded-2xl shadow-md transition-all active:scale-95 ${
+                  className={`w-full h-14 sm:h-16 text-lg font-bold rounded-2xl shadow-md transition-all active:scale-95 cursor-pointer ${
                     index === 0
                       ? "bg-sky-600 hover:bg-sky-700"
                       : index === 1
@@ -291,7 +324,7 @@ export function LiveScoreboard({
         <button
           type="button"
           onClick={onEndMatch}
-          className="text-xs text-slate-400 hover:text-slate-600 hover:underline transition"
+          className="text-xs text-slate-400 hover:text-slate-600 hover:underline transition cursor-pointer"
         >
           Kết thúc ván đấu sớm
         </button>
