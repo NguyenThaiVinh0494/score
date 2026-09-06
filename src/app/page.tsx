@@ -73,11 +73,12 @@ export default function HomePage() {
 
   // 1. Start Match
   const handleStartMatch = (config: MatchConfig) => {
-    const initializedPlayers: Player[] = config.players.map((name, index) => ({
+    const initializedPlayers: Player[] = config.players.map((p, index) => ({
       id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `p_${index + 1}`,
-      name,
+      name: p.name,
       score: 0,
       order: index + 1,
+      colorKey: p.colorKey,
     }));
 
     setTitle(config.title);

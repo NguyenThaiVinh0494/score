@@ -32,48 +32,7 @@ interface LiveScoreboardProps {
   onEndMatch: () => void;
 }
 
-const PLAYER_THEME_COLORS = [
-  {
-    badge: "bg-sky-500 text-white",
-    btn: "bg-sky-600 hover:bg-sky-700 active:bg-sky-800 shadow-sky-600/25",
-    border: "border-sky-500",
-  },
-  {
-    badge: "bg-emerald-500 text-white",
-    btn: "bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 shadow-emerald-600/25",
-    border: "border-emerald-500",
-  },
-  {
-    badge: "bg-amber-500 text-white",
-    btn: "bg-amber-500 hover:bg-amber-600 active:bg-amber-700 shadow-amber-500/25 text-white",
-    border: "border-amber-500",
-  },
-  {
-    badge: "bg-rose-500 text-white",
-    btn: "bg-rose-600 hover:bg-rose-700 active:bg-rose-800 shadow-rose-600/25",
-    border: "border-rose-500",
-  },
-  {
-    badge: "bg-indigo-500 text-white",
-    btn: "bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 shadow-indigo-600/25",
-    border: "border-indigo-500",
-  },
-  {
-    badge: "bg-teal-500 text-white",
-    btn: "bg-teal-600 hover:bg-teal-700 active:bg-teal-800 shadow-teal-600/25",
-    border: "border-teal-500",
-  },
-  {
-    badge: "bg-violet-500 text-white",
-    btn: "bg-violet-600 hover:bg-violet-700 active:bg-violet-800 shadow-violet-600/25",
-    border: "border-violet-500",
-  },
-  {
-    badge: "bg-pink-500 text-white",
-    btn: "bg-pink-600 hover:bg-pink-700 active:bg-pink-800 shadow-pink-600/25",
-    border: "border-pink-500",
-  },
-];
+import { getPlayerColor } from "@/lib/colors";
 
 export function LiveScoreboard({
   title,
@@ -190,7 +149,7 @@ export function LiveScoreboard({
         }`}
       >
         {players.map((player, index) => {
-          const color = PLAYER_THEME_COLORS[index % PLAYER_THEME_COLORS.length];
+          const color = getPlayerColor(player.colorKey, index);
           const isJustScored = lastScoredId === player.id;
           const remainingToWin = targetScore - player.score;
 

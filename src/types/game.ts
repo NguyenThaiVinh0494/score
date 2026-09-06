@@ -3,7 +3,7 @@ export interface Player {
   name: string;
   score: number;
   order: number;
-  color?: string;
+  colorKey?: string;
 }
 
 export interface RoundLog {
@@ -14,10 +14,15 @@ export interface RoundLog {
   timestamp: string;
 }
 
+export interface PlayerSetupConfig {
+  name: string;
+  colorKey: string;
+}
+
 export interface MatchConfig {
   title: string;
   targetScore: number;
-  players: string[];
+  players: PlayerSetupConfig[];
 }
 
 export interface MatchRecord {
@@ -31,6 +36,7 @@ export interface MatchRecord {
     name: string;
     score: number;
     order: number;
+    colorKey?: string;
   }[];
   rounds: {
     roundNumber: number;
